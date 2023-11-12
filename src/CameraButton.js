@@ -2,16 +2,10 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Camera } from "expo-camera";
 import { MaterialIcons } from "@expo/vector-icons";
+import cameraPermission from "./hooks/cameraPermission";
 
 export default function CameraButton() {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [type, setType] = useState(Camera.Constants.Type.back);
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
-    })();
-  }, []);
+  const { hasPermission, type, setType } = cameraPermission(); // hook
   if (hasPermission === null) {
     return <View></View>;
   }
