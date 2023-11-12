@@ -4,9 +4,9 @@ import { View } from "react-native";
 import React from "react";
 import HomeScreen from "./screens/Home";
 import SightsScreen from "./screens/Sights";
-import PozaScreen from "./screens/Poza";
 import MapScreen from "./screens/Map";
 import SettingsScreen from "./screens/Settings";
+import CameraButton from "./CameraButton";
 
 const Tab = createBottomTabNavigator();
 
@@ -75,7 +75,7 @@ export default function BottomTabs() {
 
       <Tab.Screen
         name={"ActionButton"}
-        component={PozaScreen}
+        component={CameraButton}
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ focused }) => (

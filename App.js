@@ -25,4 +25,5 @@ const styles = StyleSheet.create({
   },
 });
 
-//SOURCE: https://www.youtube.com/watch?app=desktop&v=t0GMzGgHwgk
+//SOURCE NAVBAR: https://www.youtube.com/watch?app=desktop&v=t0GMzGgHwgk
+//CAMERA CODE: https://docs.expo.dev/versions/latest/sdk/camera/
