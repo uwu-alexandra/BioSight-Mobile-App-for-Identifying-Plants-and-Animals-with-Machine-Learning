@@ -9,11 +9,27 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "plugins": [
+        [
+          "expo-media-library",
+          {
+            "photosPermission": "Allow BioSight to access your photos.",
+            "savePhotosPermission": "Allow BioSight to save photos."
+          },
+          "expo-camera",
+          {
+            "cameraPermission": "Allow BioSight to access your camera."
+          },
+          "expo-image-picker",
+          {
+            "cameraPermission": "Allow BioSight to access your camera.",
+            "mediaLibraryPermission": "Allow BioSight to access your media library."
+          }
+        ]
+      ]
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
