@@ -10,7 +10,7 @@ import CameraButton from "./CameraButton";
 
 const Tab = createBottomTabNavigator();
 
-export default function BottomTabs() {
+export default function BottomTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{

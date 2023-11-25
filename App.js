@@ -3,14 +3,14 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import BottomTab from "./src/BottomTab";
+import BottomTabNavigator from "./src/BottomTabNavigator";
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={"dark-content"} />
       <NavigationContainer>
-        <BottomTab />
+        <BottomTabNavigator />
       </NavigationContainer>
     </SafeAreaProvider>
   );

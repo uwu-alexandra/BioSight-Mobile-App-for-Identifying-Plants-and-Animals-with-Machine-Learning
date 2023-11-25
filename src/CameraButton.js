@@ -1,69 +1,152 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { Camera } from "expo-camera";
-import { MaterialIcons } from "@expo/vector-icons";
-import cameraPermission from "./hooks/cameraPermission";
+import React, { useState, useRef } from "react";
+import { Text, View, StyleSheet, Image } from "react-native";
+import Constants from "expo-constants";
+import { Camera, CameraType } from "expo-camera";
+import * as MediaLibrary from "expo-media-library";
+import Button from "./components/Button";
 
 export default function CameraButton() {
-  const { hasPermission, type, setType } = cameraPermission(); // hook
-  if (hasPermission === null) {
-    return <View></View>;
-  }
-  if (hasPermission === false) {
+  const [hasCameraPermission] = useState(null);
+  const [image, setImage] = useState(null);
+  const [type, setType] = useState(Camera.Constants.Type.back);
+  const [flash, setFlash] = useState(Camera.Constants.FlashMode.off);
+  const cameraRef = useRef(null);
+
+  const takePicture = async () => {
+    if (cameraRef) {
+      try {
+        const data = await cameraRef.current.takePictureAsync();
+        console.log(data);
+        setImage(data.uri);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
+  //Aici facem Clasificarea/Identificarea imaginii candva pe langa salvarea pozei in galerie
+  const savePicture = async () => {
+    if (image) {
+      try {
+        const asset = await MediaLibrary.createAssetAsync(image);
+        alert("Picture saved! 🎉");
+        setImage(null);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
+  if (hasCameraPermission === false) {
     return <Text>No access to camera</Text>;
   }
+
   return (
     <View style={styles.container}>
-      <Camera
-        style={styles.camera}
-        type={type}
-      >
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              setType(
-                type === Camera.Constants.Type.back
-                  ? Camera.Constants.Type.front
-                  : Camera.Constants.Type.back
-              );
+      {!image ? (
+        <Camera
+          style={styles.camera}
+          type={type}
+          ref={cameraRef}
+          flashMode={flash}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              paddingHorizontal: 30,
             }}
           >
-            <View>
-              <MaterialIcons
-                name="flip-camera-ios"
-                size={40}
-                color={"red"}
-              ></MaterialIcons>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </Camera>
+            <Button
+              title=""
+              icon="retweet"
+              onPress={() => {
+                setType(
+                  type === CameraType.back ? CameraType.front : CameraType.back
+                );
+              }}
+            />
+            <Button
+              onPress={() =>
+                setFlash(
+                  flash === Camera.Constants.FlashMode.off
+                    ? Camera.Constants.FlashMode.on
+                    : Camera.Constants.FlashMode.off
+                )
+              }
+              icon="flash"
+              color={flash === Camera.Constants.FlashMode.off ? "gray" : "#fff"}
+            />
+          </View>
+        </Camera>
+      ) : (
+        <Image
+          source={{ uri: image }}
+          style={styles.camera}
+        />
+      )}
+
+      <View style={styles.controls}>
+        {image ? (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              paddingHorizontal: 50,
+            }}
+          >
+            <Button
+              title="Refă"
+              onPress={() => setImage(null)}
+              icon="retweet"
+            />
+            <Button
+              title="Identifică"
+              onPress={savePicture}
+              icon="check"
+            />
+          </View>
+        ) : (
+          <Button
+            onPress={takePicture}
+            icon="camera"
+          />
+        )}
+      </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignContent: "center",
+    justifyContent: "center",
+    paddingTop: Constants.statusBarHeight,
+    backgroundColor: "#000",
+    padding: 8,
   },
-  camera: {
-    flex: 1,
-  },
-  buttonContainer: {
-    flex: 1,
-    backgroundColor: "transparent",
-    flexDirection: "row",
-    margin: 20,
+  controls: {
+    flex: 0.5,
   },
   button: {
-    flex: 0.1,
-    alignSelf: "flex-end",
+    height: 40,
+    borderRadius: 6,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    position: "relatove",
   },
   text: {
-    fontSize: 18,
-    color: "white",
-    marginBottom: 10,
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#E9730F",
+    marginLeft: 10,
+  },
+  camera: {
+    flex: 5,
+    borderRadius: 20,
+  },
+  topControls: {
+    flex: 1,
   },
 });
