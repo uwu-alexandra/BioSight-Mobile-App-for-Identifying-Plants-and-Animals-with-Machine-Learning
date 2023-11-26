@@ -7,6 +7,7 @@ import SightsScreen from "./screens/Sights";
 import MapScreen from "./screens/Map";
 import SettingsScreen from "./screens/Settings";
 import CameraButton from "./CameraButton";
+import { colors } from "./Colors";
 
 const Tab = createBottomTabNavigator();
 
@@ -30,7 +31,7 @@ export default function BottomTabNavigator() {
       }}
     >
       <Tab.Screen
-        name={"Home"}
+        name={"Acasă"}
         component={HomeScreen}
         options={{
           tabBarShowLabel: false,
@@ -44,7 +45,7 @@ export default function BottomTabNavigator() {
               <Entypo
                 name="home"
                 size={27}
-                color={focused ? "red" : "gray"}
+                color={focused ? colors.focused : colors.unfocused}
               ></Entypo>
             </View>
           ),
@@ -52,7 +53,7 @@ export default function BottomTabNavigator() {
       ></Tab.Screen>
 
       <Tab.Screen
-        name={"Sights"}
+        name={"Catalog"}
         component={SightsScreen}
         options={{
           tabBarShowLabel: false,
@@ -66,7 +67,7 @@ export default function BottomTabNavigator() {
               <FontAwesome5
                 name="book"
                 size={24}
-                color={focused ? "red" : "gray"}
+                color={focused ? colors.focused : colors.unfocused}
               ></FontAwesome5>
             </View>
           ),
@@ -74,7 +75,7 @@ export default function BottomTabNavigator() {
       ></Tab.Screen>
 
       <Tab.Screen
-        name={"ActionButton"}
+        name={"Identificare"}
         component={CameraButton}
         options={{
           tabBarShowLabel: false,
@@ -83,7 +84,7 @@ export default function BottomTabNavigator() {
               style={{
                 width: 55,
                 height: 55,
-                backgroundColor: "red",
+                backgroundColor: colors.focused,
                 borderRadius: 30,
                 justifyContent: "center",
                 alignItems: "center",
@@ -101,7 +102,7 @@ export default function BottomTabNavigator() {
       ></Tab.Screen>
 
       <Tab.Screen
-        name={"Map"}
+        name={"Hartă"}
         component={MapScreen}
         options={{
           tabBarShowLabel: false,
@@ -115,7 +116,7 @@ export default function BottomTabNavigator() {
               <Entypo
                 name="map"
                 size={25}
-                color={focused ? "red" : "gray"}
+                color={focused ? colors.focused : colors.unfocused}
               ></Entypo>
             </View>
           ),
@@ -123,7 +124,7 @@ export default function BottomTabNavigator() {
       ></Tab.Screen>
 
       <Tab.Screen
-        name={"Settings"}
+        name={"Setări"}
         component={SettingsScreen}
         options={{
           tabBarShowLabel: false,
@@ -137,7 +138,7 @@ export default function BottomTabNavigator() {
               <Ionicons
                 name="settings-sharp"
                 size={24}
-                color={focused ? "red" : "gray"}
+                color={focused ? colors.focused : colors.unfocused}
               ></Ionicons>
             </View>
           ),
