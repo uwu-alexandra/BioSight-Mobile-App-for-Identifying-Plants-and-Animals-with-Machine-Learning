@@ -24,5 +24,3 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
-
-//SOURCE: https://www.youtube.com/watch?app=desktop&v=t0GMzGgHwgk
