@@ -1,28 +1,42 @@
-import { KeyboardAvoidingView, StyleSheet, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+} from "react-native";
 import React from "react";
-import { TextInput, TouchableOpacity } from "react-native-gesture-handler";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import { colors } from "../Colors";
+import TextField from "../components/Textfield";
+import logoPng from "../../assets/logoPng.png";
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior="padding"
     >
+      <Image
+        source={logoPng}
+        style={styles.logo}
+      />
+
       <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Email"
+        <TextField
+          label="Email"
           // value={}
           // onChangeText={text =>}
-          style={[styles.input, { marginBottom: 20 }]}
+          style={{ marginBottom: 20 }}
         />
-        <TextInput
-          placeholder="Password"
+        <TextField
+          label="Password"
           // value={}
           // onChangeText={text =>}
-          style={[styles.input, { marginBottom: 10 }]}
+          style={{ marginBottom: 10 }}
           secureTextEntry
         />
       </View>
@@ -50,15 +64,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.background,
+  },
+  logo: {
+    width: 400,
+    height: 120,
+    marginBottom: 20,
+    transform: [{ scale: 0.5 }],
+    paddingBottom: 30,
   },
   inputContainer: {
     width: "80%",
-  },
-  input: {
-    height: 40,
-    borderColor: colors.unfocused,
-    borderWidth: 1,
-    paddingLeft: 10,
   },
   buttonContainer: {
     marginTop: 20,

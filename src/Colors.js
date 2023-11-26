@@ -4,7 +4,7 @@ export const colors = {
   focused: "#319B00",
   unfocused: "grey",
   text: "",
-  background: "",
+  background: "#f4f4f4",
 };
 
 // export const darkColors = {
