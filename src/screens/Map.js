@@ -4,7 +4,7 @@ import React from "react";
 const MapScreen = () => {
   return (
     <View style={styles.container}>
-      <Text>Hartă</Text>
+      <Text>Map</Text>
     </View>
   );
 };

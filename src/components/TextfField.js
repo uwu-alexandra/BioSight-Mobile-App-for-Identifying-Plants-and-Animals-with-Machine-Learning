@@ -43,7 +43,7 @@ const TextField = (props) => {
           {
             top: focusAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: [hasText || isFocused ? 24 : 12, -6],
+              outputRange: [hasText || isFocused ? 24 : 18, -6],
             }),
           },
         ]}
@@ -54,7 +54,7 @@ const TextField = (props) => {
             {
               fontSize: focusAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [16, 12],
+                outputRange: [16, 13],
               }),
               color: isFocused ? "black" : "#B9C4CA",
             },
@@ -69,7 +69,7 @@ const TextField = (props) => {
 
 const styles = StyleSheet.create({
   input: {
-    padding: 24,
+    padding: 16,
     borderColor: "#B9C4CA",
     borderWidth: 1,
     borderRadius: 4,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     top: -6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     backgroundColor: colors.background,
   },
   label: {

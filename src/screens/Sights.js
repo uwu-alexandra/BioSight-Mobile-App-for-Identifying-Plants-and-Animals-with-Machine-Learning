@@ -4,7 +4,7 @@ import React from "react";
 const SightsScreen = () => {
   return (
     <View style={styles.container}>
-      <Text>Vederi</Text>
+      <Text>Sights</Text>
     </View>
   );
 };

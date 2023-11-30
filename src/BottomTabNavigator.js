@@ -49,7 +49,7 @@ const MainStack = () => (
     }}
   >
     <Tab.Screen
-      name={"Acasă"}
+      name={"Home"}
       component={HomeScreen}
       options={{
         tabBarShowLabel: false,
@@ -71,7 +71,7 @@ const MainStack = () => (
     ></Tab.Screen>
 
     <Tab.Screen
-      name={"Catalog"}
+      name={"Sights"}
       component={SightsScreen}
       options={{
         tabBarShowLabel: false,
@@ -93,7 +93,7 @@ const MainStack = () => (
     ></Tab.Screen>
 
     <Tab.Screen
-      name={"Identificare"}
+      name={"Identify"}
       component={CameraButton}
       options={{
         tabBarShowLabel: false,
@@ -120,7 +120,7 @@ const MainStack = () => (
     ></Tab.Screen>
 
     <Tab.Screen
-      name={"Hartă"}
+      name={"Map"}
       component={MapScreen}
       options={{
         tabBarShowLabel: false,
@@ -142,7 +142,7 @@ const MainStack = () => (
     ></Tab.Screen>
 
     <Tab.Screen
-      name={"Setări"}
+      name={"Settings"}
       component={SettingsScreen}
       options={{
         tabBarShowLabel: false,
@@ -176,6 +176,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Main"
         component={MainStack}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
