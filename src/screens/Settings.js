@@ -4,7 +4,7 @@ import React from "react";
 const SettingsScreen = () => {
   return (
     <View style={styles.container}>
-      <Text>Setări</Text>
+      <Text>Settings</Text>
     </View>
   );
 };
