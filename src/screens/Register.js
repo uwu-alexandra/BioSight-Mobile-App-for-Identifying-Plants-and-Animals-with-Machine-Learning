@@ -1,14 +1,37 @@
+import { useState } from "react";
 import { StyleSheet, Text, View, Image } from "react-native";
-import React from "react";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { colors } from "../Colors";
 import TextField from "../components/TextfField";
 import logoPng from "../../assets/logoPng.png";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleSignUp = () => {
+    if (password !== confirmPassword) {
+      alert(
+        "Passwords do not match. Make sure to type the same password twice."
+      );
+      return;
+    }
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredentials) => {
+        const user = userCredentials.user;
+        console.log("Registered with:", user.email);
+        alert("Registered with:" + user.email + "Welcome! 🎉");
+        navigation.replace("Main");
+      })
+      .catch((error) => alert(error.message));
+  };
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={{ flex: 1 }}>
@@ -20,40 +43,36 @@ const RegisterScreen = () => {
 
         <View style={styles.inputContainer}>
           <TextField
-            label="Username"
-            // value={}
-            // onChangeText={text =>}
-            style={{ marginBottom: 20 }}
-          />
-          <TextField
             label="Email"
-            // value={}
-            // onChangeText={text =>}
+            value={email}
+            onChangeText={(text) => setEmail(text)}
             style={{ marginBottom: 20 }}
           />
           <TextField
             label="Password"
-            // value={}
-            // onChangeText={text =>}
+            value={password}
+            onChangeText={(text) => setPassword(text)}
             style={{ marginBottom: 20 }}
             secureTextEntry
           />
           <TextField
             label="Confirm password"
-            // value={}
-            // onChangeText={text =>}
+            value={confirmPassword}
+            onChangeText={(text) => setConfirmPassword(text)}
             style={{ marginBottom: 10 }}
             secureTextEntry
           />
         </View>
+
         <View style={[styles.buttonContainer, { marginTop: 10 }]}>
           <TouchableOpacity
-            onPress={() => {}}
+            onPress={handleSignUp}
             style={styles.registerloginButton}
           >
             <Text style={styles.registerloginButtonText}>Sign up</Text>
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity onPress={() => navigation.navigate("Login")}>
           <View>
             <Text style={styles.loginLinkText}>

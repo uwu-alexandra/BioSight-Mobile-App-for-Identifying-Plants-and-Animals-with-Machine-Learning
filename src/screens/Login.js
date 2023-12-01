@@ -1,14 +1,29 @@
 import { StyleSheet, Text, View, Image } from "react-native";
-import React from "react";
+import { useState } from "react";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { colors } from "../Colors";
 import TextField from "../components/TextfField";
 import logoPng from "../../assets/logoPng.png";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = () => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredentials) => {
+        const user = userCredentials.user;
+        console.log("Logged in with:" + user.email);
+        alert(user.email + " Welcome back! 🎉");
+        navigation.replace("Main");
+      })
+      .catch((error) => alert(error.message));
+  };
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={{ flex: 1 }}>
@@ -21,21 +36,21 @@ const LoginScreen = () => {
         <View style={styles.inputContainer}>
           <TextField
             label="Email"
-            // value={}
-            // onChangeText={text =>}
+            value={email}
+            onChangeText={(text) => setEmail(text)}
             style={{ marginBottom: 20 }}
           />
           <TextField
             label="Password"
-            // value={}
-            // onChangeText={text =>}
+            value={password}
+            onChangeText={(text) => setPassword(text)}
             style={{ marginBottom: 10 }}
             secureTextEntry
           />
         </View>
         <View style={[styles.buttonContainer, { marginTop: 20 }]}>
           <TouchableOpacity
-            onPress={() => {}}
+            onPress={handleLogin}
             style={styles.loginButton}
           >
             <Text style={styles.loginButtonText}>Login</Text>
