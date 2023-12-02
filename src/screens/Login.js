@@ -4,9 +4,9 @@ import { TouchableOpacity } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { colors } from "../Colors";
-import TextField from "../components/TextfField";
+import TextField from "../components/TextField";
 import logoPng from "../../assets/logoPng.png";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 
 const LoginScreen = () => {
@@ -20,7 +20,20 @@ const LoginScreen = () => {
         const user = userCredentials.user;
         console.log("Logged in with:" + user.email);
         alert(user.email + " Welcome back! 🎉");
-        navigation.replace("Main");
+        if (user) {
+          navigation.replace("Main", { screen: "Home" });
+        }
+      })
+      .catch((error) => alert(error.message));
+  };
+
+  const handleGuestLogin = () => {
+    signInAnonymously(auth)
+      .then((userCredentials) => {
+        const user = userCredentials.user;
+        console.log("Logged in anonymously as guest:" + user.uid);
+        alert("Welcome guest " + user.uid);
+        navigation.replace("Main", { screen: "Home" });
       })
       .catch((error) => alert(error.message));
   };
@@ -58,7 +71,7 @@ const LoginScreen = () => {
         </View>
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            onPress={() => navigation.replace("Main")}
+            onPress={handleGuestLogin}
             style={styles.guestButton}
           >
             <Text style={styles.guestButtonText}>Guest</Text>
