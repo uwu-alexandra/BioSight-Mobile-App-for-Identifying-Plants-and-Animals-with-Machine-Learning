@@ -7,7 +7,7 @@ import { colors } from "../Colors";
 import TextField from "../components/TextField";
 import logoPng from "../../assets/logoPng.png";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import { auth } from "../../firebase.config";
 
 const RegisterScreen = () => {
   const navigation = useNavigation();

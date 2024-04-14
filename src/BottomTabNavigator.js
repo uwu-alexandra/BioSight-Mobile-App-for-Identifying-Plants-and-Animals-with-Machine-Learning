@@ -12,7 +12,7 @@ import RegisterScreen from "./screens/Register";
 import LoginScreen from "./screens/Login";
 import { colors } from "./Colors";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebaseConfig";
+import { auth } from "../firebase.config";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
