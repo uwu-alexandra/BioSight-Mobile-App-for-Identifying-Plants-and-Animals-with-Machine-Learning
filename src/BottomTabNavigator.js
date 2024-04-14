@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { FontAwesome5, Entypo, Ionicons } from "@expo/vector-icons";
-import { View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import HomeScreen from "./screens/Home";
 import SightsScreen from "./screens/Sights";
 import MapScreen from "./screens/Map";
@@ -153,34 +153,31 @@ const MainStack = () => {
         }}
       ></Tab.Screen>
 
-      <Tab.Screen
+<Tab.Screen
         name={"Settings"}
-        component={user ? SettingsScreen : () => null} // Conditionally render SettingsScreen based on user
-        listeners={{
-          tabPress: (e) => {
-            // Prevent navigating to the Settings screen if the user is not logged in
-            if (!user.isGuest) {
-              e.preventDefault();
-              // Show an alert indicating that the functionality is not available
-              alert("Functionality not available for guests");
-            }
-          },
-        }}
+        component={SettingsScreen}
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                position: "absolute",
-                top: 20,
-              }}
-            >
+            <View style={{ position: "absolute", top: 20 }}>
               <Ionicons
                 name="settings-sharp"
                 size={24}
                 color={focused ? colors.focused : colors.unfocused}
               ></Ionicons>
             </View>
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => {
+                if (user && user.isGuest) {
+                  alert("Settings are not available for guest users.");
+                } else {
+                  props.onPress(); // Continue with original handler if not a guest
+                }
+              }}
+            />
           ),
         }}
       ></Tab.Screen>
@@ -194,11 +191,18 @@ export default function AppNavigator() {
 
   // Handle user state changes
   const onAuthStateChangedHandler = (user) => {
-    setUser(user);
+    if (user) {
+
+      const enhancedUser = { ...user, isGuest: user.isAnonymous };
+      setUser(enhancedUser);
+    } else {
+      setUser(null);
+    }
     if (initializing) {
       setInitializing(false);
     }
   };
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, onAuthStateChangedHandler);

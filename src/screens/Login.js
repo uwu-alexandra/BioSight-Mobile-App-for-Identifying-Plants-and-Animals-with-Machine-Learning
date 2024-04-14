@@ -37,7 +37,7 @@ const LoginScreen = () => {
       })
       .catch((error) => alert(error.message));
   };
-
+  
   return (
     <KeyboardAwareScrollView contentContainerStyle={{ flex: 1 }}>
       <View style={styles.container}>
