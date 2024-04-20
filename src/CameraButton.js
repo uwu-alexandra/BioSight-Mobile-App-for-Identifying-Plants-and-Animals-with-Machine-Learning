@@ -45,74 +45,100 @@ export default function CameraButton() {
     }
   };
 
-  // Save the picture to the device's gallery and upload it to Firebase Storage
-  const savePicture = async () => {
-    if (!image) {
-      alert("No image to save!");
-      return;
-    }
-    const resizedImageUri = await resizeImage(image);
-    try {
-      const asset = await MediaLibrary.createAssetAsync(resizedImageUri);
-      const user = auth.currentUser;
-      const isGuest = user ? user.isAnonymous : false;
-      const userId = user.uid;
-      const response = await fetch(resizedImageUri);
-      const blob = await response.blob();
-      // Save the image to folder images/guests for guests or images/users/{userId} for registered users
-      const folderPath = isGuest ? `images/guests` : `images/users/${userId}`;
-      const storageRef = storage.ref(`${folderPath}/${asset.filename}`);
-      const snapshot = await storageRef.put(blob);
-      const imageUrl = await snapshot.ref.getDownloadURL();
-      // Reset the image state
-      setImage(null);
-      return imageUrl;
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("Error", error.message);
-      return null;
-    }
-  };
+// Save the picture to the device's gallery and upload it to Firebase Storage
+const savePicture = async (fileUri, predictedClassName) => {
+  if (typeof fileUri !== 'string') {
+    console.error("Invalid file URI:", fileUri);
+    return null;
+  }
 
-  // Send the image to the server for identification
-  const sendImageToServer = async (fileUri) => {
-    const formData = new FormData();
-    formData.append('file', {
-      uri: fileUri,
-      type: 'image/jpeg',
-      name: 'upload.jpg',
+  const resizedImageUri = await resizeImage(fileUri);
+  try {
+    const asset = await MediaLibrary.createAssetAsync(resizedImageUri);
+    const user = auth.currentUser;
+    const isGuest = user ? user.isAnonymous : false;
+    const userId = user.uid;
+    const response = await fetch(resizedImageUri);
+    const blob = await response.blob();
+
+    // Get the current timestamp
+    const timestamp = Date.now();
+    // Construct the image name with the predicted class name and timestamp
+    const imageName = `${predictedClassName}_${timestamp}.jpg`;
+
+    // Save the image to folder images/guests for guests or images/users/{userId} for registered users
+    const folderPath = isGuest ? `images/guests` : `images/users/${userId}`;
+    const storageRef = storage.ref(`${folderPath}/${imageName}`);
+    const snapshot = await storageRef.put(blob);
+    const imageUrl = await snapshot.ref.getDownloadURL();
+    // Reset the image state
+    setImage(null);
+    return imageUrl;
+  } catch (error) {
+    console.error("Upload failed:", error);
+    alert("Error", error.message);
+    return null;
+  }
+};
+
+// Send the image to the server for identification and wait for the prediction to finish
+const sendImageToServerAndWait = async (fileUri) => {
+  const predictedClassName = await sendImageToServer(fileUri);
+  if (predictedClassName) {
+    console.log("Image uploaded successfully with URL:", predictedClassName);
+    const imageUrl = await savePicture(fileUri, predictedClassName);
+  } else {
+    console.log("Failed to upload image.");
+  }
+};
+
+// Send the image to the server for identification
+const sendImageToServer = async (fileUri) => {
+  if (typeof fileUri !== 'string') {
+    console.error("Invalid file URI:", fileUri);
+    return null;
+  }
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri: fileUri,
+    type: 'image/jpeg',
+    name: 'upload.jpg',
+  });
+  try {
+    const response = await fetch('https://cow-splendid-cicada.ngrok-free.app/predict', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
-    try {
-      const response = await fetch('https://cow-splendid-cicada.ngrok-free.app/predict', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
 
-      if (response.ok) {
-        const jsonResponse = await response.json();
-        console.log("Server response:", jsonResponse);
-      } else {
-        const errorResponse = await response.text();
-        throw new Error(`Failed to send file, status: ${response.status}`);
-      }
-    } catch (error) {
-      console.error("Error sending file to server:", error);
-      alert("Error sending file to server:", error.message);
-    }
-  };
-
-  // Call the savePicture and sendImageToServer functions
-  const saveAndIdentifyPicture = async () => {
-    const imageUrl = await savePicture();
-    if (imageUrl) {
-      await sendImageToServer(imageUrl);
+    if (response.ok) {
+      const jsonResponse = await response.json();
+      console.log("Server response:", jsonResponse);
+      
+      // Get the predicted class name from the JSON response
+      return jsonResponse.predicted_class; // Return predicted class name
     } else {
-      console.log("Failed to get the image URL, not sending to server.");
+      const errorResponse = await response.text();
+      throw new Error(`Failed to send file, status: ${response.status}`);
     }
-  };
+  } catch (error) {
+    console.error("Error sending file to server:", error);
+    alert("Error sending file to server:", error.message);
+    return null;
+  }
+};
+
+// Call the savePicture and sendImageToServerAndWait functions
+const saveAndIdentifyPicture = async () => {
+  if (image) {
+    await sendImageToServerAndWait(image);
+  } else {
+    console.log("No image available to send.");
+  }
+};
 
   // If the user denies the camera permission, show a message
   if (hasCameraPermission === false) {
