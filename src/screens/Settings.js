@@ -1,10 +1,24 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Button } from "react-native";
 import React from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase.config";
 
 const SettingsScreen = () => {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text>Settings</Text>
+      <Text>Settings:</Text>
+      <Button
+        title="Logout"
+        onPress={handleLogout}
+      />
     </View>
   );
 };

@@ -97,9 +97,27 @@ const MainStack = () => {
               <FontAwesome5
                 name="book"
                 size={24}
-                color={focused ? colors.focused : colors.unfocused}
+                color={
+                  user && user.isGuest
+                    ? "lightgray"
+                    : focused
+                    ? colors.focused
+                    : colors.unfocused
+                }
               ></FontAwesome5>
             </View>
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => {
+                if (user && user.isGuest) {
+                  alert("Sights are not available for guest users.");
+                } else {
+                  props.onPress(); // Continue with original handler if not a guest
+                }
+              }}
+            />
           ),
         }}
       ></Tab.Screen>
@@ -121,11 +139,7 @@ const MainStack = () => {
                 marginBottom: Platform.OS == "ios" ? 50 : 30,
               }}
             >
-              <Entypo
-                name="camera"
-                size={25}
-                color="white"
-              ></Entypo>
+              <Entypo name="camera" size={25} color="white"></Entypo>
             </View>
           ),
         }}
@@ -146,14 +160,32 @@ const MainStack = () => {
               <Entypo
                 name="map"
                 size={25}
-                color={focused ? colors.focused : colors.unfocused}
+                color={
+                  user && user.isGuest
+                    ? "lightgray"
+                    : focused
+                    ? colors.focused
+                    : colors.unfocused
+                }
               ></Entypo>
             </View>
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => {
+                if (user && user.isGuest) {
+                  alert("Map are not available for guest users.");
+                } else {
+                  props.onPress(); // Continue with original handler if not a guest
+                }
+              }}
+            />
           ),
         }}
       ></Tab.Screen>
 
-<Tab.Screen
+      <Tab.Screen
         name={"Settings"}
         component={SettingsScreen}
         options={{
@@ -166,18 +198,6 @@ const MainStack = () => {
                 color={focused ? colors.focused : colors.unfocused}
               ></Ionicons>
             </View>
-          ),
-          tabBarButton: (props) => (
-            <TouchableOpacity
-              {...props}
-              onPress={() => {
-                if (user && user.isGuest) {
-                  alert("Settings are not available for guest users.");
-                } else {
-                  props.onPress(); // Continue with original handler if not a guest
-                }
-              }}
-            />
           ),
         }}
       ></Tab.Screen>
@@ -192,7 +212,6 @@ export default function AppNavigator() {
   // Handle user state changes
   const onAuthStateChangedHandler = (user) => {
     if (user) {
-
       const enhancedUser = { ...user, isGuest: user.isAnonymous };
       setUser(enhancedUser);
     } else {
@@ -202,7 +221,6 @@ export default function AppNavigator() {
       setInitializing(false);
     }
   };
-  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, onAuthStateChangedHandler);

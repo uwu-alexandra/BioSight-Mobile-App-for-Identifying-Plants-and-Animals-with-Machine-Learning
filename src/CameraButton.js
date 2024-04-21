@@ -232,7 +232,7 @@ export default function CameraButton() {
                 />
               </View>
             ) : (
-              <Button onPress={takePicture} icon="camera" />
+                <Button onPress={takePicture} icon="camera" />
             )}
           </View>
         </>
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    position: "relatove",
+    position: "relative",
   },
   text: {
     fontWeight: "bold",
