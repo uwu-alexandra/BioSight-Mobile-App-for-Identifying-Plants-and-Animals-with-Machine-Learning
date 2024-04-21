@@ -130,6 +130,7 @@ const MainStack = () => {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
+                flex: focused ? -1 : undefined,
                 width: 55,
                 height: 55,
                 backgroundColor: colors.focused,

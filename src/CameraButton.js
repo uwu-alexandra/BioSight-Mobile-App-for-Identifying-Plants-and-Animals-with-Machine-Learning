@@ -232,7 +232,11 @@ export default function CameraButton() {
                 />
               </View>
             ) : (
-                <Button onPress={takePicture} icon="camera" />
+                <Button 
+                title={"Take Picture"}
+                onPress={takePicture}
+                icon={"camera"}
+                />
             )}
           </View>
         </>
