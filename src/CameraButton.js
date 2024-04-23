@@ -1,15 +1,23 @@
 import React, { useState, useRef } from "react";
-import { Text, View, StyleSheet, Image } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Image,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import Constants from "expo-constants";
 import { Camera, CameraType } from "expo-camera";
 import Spinner from "react-native-loading-spinner-overlay";
 import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
-import Button from "./components/Button";
+import CustomButton from "./components/Button";
 import { auth, storage } from "../firebase.config";
 import { useEffect } from "react";
 import { colors } from "./Colors";
-
+import { AntDesign } from "@expo/vector-icons";
 
 export default function CameraButton() {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -18,6 +26,8 @@ export default function CameraButton() {
   const [flash, setFlash] = useState(Camera.Constants.FlashMode.off);
   const cameraRef = useRef(null);
   const [spinner, setSpinner] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -85,19 +95,6 @@ export default function CameraButton() {
     }
   };
 
-  // Send the image to the server for identification and wait for the prediction to finish
-  const sendImageToServerAndWait = async (fileUri) => {
-    setSpinner(true); // Show spinner
-    const predictedClassName = await sendImageToServer(fileUri);
-    if (predictedClassName) {
-      console.log("Image uploaded successfully with URL:", predictedClassName);
-      const imageUrl = await savePicture(fileUri, predictedClassName);
-    } else {
-      console.log("Failed to upload image.");
-    }
-    setSpinner(false); // Hide spinner
-  };
-
   // Send the image to the server for identification
   const sendImageToServer = async (fileUri) => {
     if (typeof fileUri !== "string") {
@@ -127,8 +124,7 @@ export default function CameraButton() {
         const jsonResponse = await response.json();
         console.log("Server response:", jsonResponse);
 
-        // Get the predicted class name from the JSON response
-        return jsonResponse.predicted_class; // Return predicted class name
+        return jsonResponse; // Return the entire JSON response
       } else {
         const errorResponse = await response.text();
         throw new Error(`Failed to send file, status: ${response.status}`);
@@ -140,10 +136,24 @@ export default function CameraButton() {
     }
   };
 
-  // Call the savePicture and sendImageToServerAndWait functions
   const saveAndIdentifyPicture = async () => {
     if (image) {
-      await sendImageToServerAndWait(image);
+      setSpinner(true);
+      const serverResponse = await sendImageToServer(image);
+      if (serverResponse) {
+        const { predicted_class, confidence, top3 } = serverResponse;
+        const imageUrl = await savePicture(image, predicted_class);
+        if (imageUrl) {
+          setModalContent({
+            imageUrl,
+            predictedClassName: predicted_class,
+            confidence,
+            top3,
+          });
+          setModalVisible(true);
+        }
+      }
+      setSpinner(false);
     } else {
       console.log("No image available to send.");
     }
@@ -160,8 +170,8 @@ export default function CameraButton() {
         visible={spinner}
         textContent={"Loading identification..."}
         textStyle={styles.spinnerTextStyle}
-        color={colors.focused} // This sets the spinner color
-        overlayColor="rgba(255, 255, 255, 0.8)" // Semi-transparent white background
+        color={colors.focused}
+        overlayColor="rgba(255, 255, 255, 0.8)"
       />
       {hasCameraPermission === false ? (
         <Text>No access to camera</Text>
@@ -181,7 +191,7 @@ export default function CameraButton() {
                   paddingHorizontal: 30,
                 }}
               >
-                <Button
+                <CustomButton
                   title=""
                   icon="retweet"
                   onPress={() => {
@@ -192,7 +202,7 @@ export default function CameraButton() {
                     );
                   }}
                 />
-                <Button
+                <CustomButton
                   onPress={() =>
                     setFlash(
                       flash === Camera.Constants.FlashMode.off
@@ -220,27 +230,94 @@ export default function CameraButton() {
                   paddingHorizontal: 50,
                 }}
               >
-                <Button
+                <CustomButton
                   title="Refă"
                   onPress={() => setImage(null)}
                   icon="retweet"
                 />
-                <Button
+                <CustomButton
                   title="Identifică"
                   onPress={saveAndIdentifyPicture}
                   icon="check"
                 />
               </View>
             ) : (
-                <Button 
+              <CustomButton
                 title={"Take Picture"}
                 onPress={takePicture}
                 icon={"camera"}
-                />
+              />
             )}
           </View>
         </>
       )}
+
+      <Modal
+        animationType="slide"
+        propagateSwipe={true}
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <ScrollView>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+            <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <View style={styles.buttonContent}>
+                  <AntDesign name="closecircleo" size={24} color="white" />
+                  <Text style={styles.buttonText}>Close</Text>
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.modalText}>
+                We are {" "}
+                <Text style={styles.boldText}>{modalContent.confidence}</Text>
+                {"\n"}confident that this is a{" "}
+                <Text style={styles.boldText}>
+                  {modalContent.predictedClassName}
+                </Text>
+              </Text>
+              <Image
+                source={{ uri: modalContent.imageUrl }}
+                style={styles.modalImage}
+              />
+              <Text style={styles.modalText}>
+                It also looks like a {"\n"}
+                {modalContent.top3 &&
+                  modalContent.top3
+                    .filter(
+                      (item) =>
+                        item.class_name !== modalContent.predictedClassName
+                    ) // Filter out the primary prediction
+                    .map((item, index, arr) => {
+                      // Check if the current item is the last in the array
+                      const isLast = index === arr.length - 1;
+                      return (
+                        <Text key={index}>
+                          <Text style={styles.boldText}>{item.class_name}</Text>
+                          {!isLast ? " or a " : " :)"} 
+                        </Text>
+                      );
+                    })}
+              </Text>
+              <Text style={styles.boldText}>
+              {"\n"}{"\n"} Here are some interesting facts{"\n"} about a {modalContent.predictedClassName}:
+                 </Text>
+              <Text style={styles.modalText}>
+                The rose, a symbol of love and beauty, wields more than  efjust its enchanting looks. 
+                This popular bloom is a horticultural marvel with a history spanning 5,000 years. 
+                Beyond its ornamental charm, the rose has practical uses; its petals flavor foods,
+                 its hips are vitamin-rich, and its oils are treasured in perfumery
+              </Text>
+
+            </View>
+          </View>
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -248,7 +325,6 @@ export default function CameraButton() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
     paddingTop: Constants.statusBarHeight,
     backgroundColor: "#000",
     padding: 8,
@@ -256,29 +332,67 @@ const styles = StyleSheet.create({
   controls: {
     flex: 0.5,
   },
-  button: {
-    height: 40,
-    borderRadius: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  text: {
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#E9730F",
-    marginLeft: 10,
-  },
   camera: {
     flex: 5,
-    borderRadius: 20,
-  },
-  topControls: {
-    flex: 1,
   },
   spinnerTextStyle: {
     color: colors.focused,
-    fontSize: 20 // Optional: adjust the font size as needed
+    fontSize: 20,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    paddingTop: 75,
+    paddingBottom: 75,
+  },
+  modalView: {
+    backgroundColor: colors.focused,
+    paddingTop: 40,
+    paddingLeft: 40,
+    paddingRight: 40,
+    marginTop: 9,
+    shadowColor: colors.focused,
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 5,
+    shadowOffset: {
+      width: 0,
+    },
+  },
+  modalImage: {
+    width: 300,
+    height: 300,
+    marginBottom: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+    fontSize: 20,
+    color: "white",
+  },
+  buttonContent: {
+    height: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    top: -30,
+    right: -130,
+    color: "white",
+  },
+  buttonText: {
+    marginLeft: 5,
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  boldText: {
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
+    fontSize: 20,
   },
 });
