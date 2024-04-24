@@ -1,13 +1,5 @@
 import React, { useState, useRef } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  Image,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
+import { Text, View, StyleSheet, Image, Modal, TouchableOpacity, ScrollView} from "react-native";
 import Constants from "expo-constants";
 import { Camera, CameraType } from "expo-camera";
 import Spinner from "react-native-loading-spinner-overlay";
@@ -17,7 +9,7 @@ import CustomButton from "./components/Button";
 import { auth, storage } from "../firebase.config";
 import { useEffect } from "react";
 import { colors } from "./Colors";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, FontAwesome } from "@expo/vector-icons";
 
 export default function CameraButton() {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -28,14 +20,25 @@ export default function CameraButton() {
   const [spinner, setSpinner] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({});
+  const [showFunFacts, setShowFunFacts] = useState(false);
 
+  // Function to request camera permissions and set the state for function components
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasCameraPermission(status === "granted");
     })();
   }, []);
+  const handleShowFunFacts = () => {
+    setShowFunFacts(true);
+  };
 
+  // Function to go back to the first screen
+  const handleGoBackUp = () => {
+    setShowFunFacts(false);
+  };
+
+  // Function to take a picture with the camera
   const takePicture = async () => {
     if (cameraRef.current) {
       const data = await cameraRef.current.takePictureAsync();
@@ -65,7 +68,7 @@ export default function CameraButton() {
       console.error("Invalid file URI:", fileUri);
       return null;
     }
-
+    // Resize the image before saving it
     const resizedImageUri = await resizeImage(fileUri);
     try {
       const asset = await MediaLibrary.createAssetAsync(resizedImageUri);
@@ -101,7 +104,7 @@ export default function CameraButton() {
       console.error("Invalid file URI:", fileUri);
       return null;
     }
-
+    // Create a FormData object to send the image as a file
     const formData = new FormData();
     formData.append("file", {
       uri: fileUri,
@@ -123,8 +126,8 @@ export default function CameraButton() {
       if (response.ok) {
         const jsonResponse = await response.json();
         console.log("Server response:", jsonResponse);
-
-        return jsonResponse; // Return the entire JSON response
+        // Return the entire JSON response
+        return jsonResponse; 
       } else {
         const errorResponse = await response.text();
         throw new Error(`Failed to send file, status: ${response.status}`);
@@ -136,13 +139,16 @@ export default function CameraButton() {
     }
   };
 
+  // Save the picture and send it to the server for identification
   const saveAndIdentifyPicture = async () => {
     if (image) {
       setSpinner(true);
       const serverResponse = await sendImageToServer(image);
       if (serverResponse) {
+        // Extract the predicted class, confidence
         const { predicted_class, confidence, top3 } = serverResponse;
         const imageUrl = await savePicture(image, predicted_class);
+        // If the image was saved successfully, show the modal with the results
         if (imageUrl) {
           setModalContent({
             imageUrl,
@@ -254,7 +260,6 @@ export default function CameraButton() {
 
       <Modal
         animationType="slide"
-        propagateSwipe={true}
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
@@ -264,8 +269,11 @@ export default function CameraButton() {
         <ScrollView>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
-            <TouchableOpacity
-                style={styles.closeButton}
+              <TouchableOpacity
+                style={[
+                  styles.closeButton,
+                  { position: "absolute", top: 10, right: 10 },
+                ]}
                 onPress={() => setModalVisible(false)}
               >
                 <View style={styles.buttonContent}>
@@ -273,47 +281,84 @@ export default function CameraButton() {
                   <Text style={styles.buttonText}>Close</Text>
                 </View>
               </TouchableOpacity>
-              <Text style={styles.modalText}>
-                We are {" "}
-                <Text style={styles.boldText}>{modalContent.confidence}</Text>
-                {"\n"}confident that this is a{" "}
-                <Text style={styles.boldText}>
-                  {modalContent.predictedClassName}
-                </Text>
-              </Text>
-              <Image
-                source={{ uri: modalContent.imageUrl }}
-                style={styles.modalImage}
-              />
-              <Text style={styles.modalText}>
-                It also looks like a {"\n"}
-                {modalContent.top3 &&
-                  modalContent.top3
-                    .filter(
-                      (item) =>
-                        item.class_name !== modalContent.predictedClassName
-                    ) // Filter out the primary prediction
-                    .map((item, index, arr) => {
-                      // Check if the current item is the last in the array
-                      const isLast = index === arr.length - 1;
-                      return (
-                        <Text key={index}>
-                          <Text style={styles.boldText}>{item.class_name}</Text>
-                          {!isLast ? " or a " : " :)"} 
-                        </Text>
-                      );
-                    })}
-              </Text>
-              <Text style={styles.boldText}>
-              {"\n"}{"\n"} Here are some interesting facts{"\n"} about a {modalContent.predictedClassName}:
-                 </Text>
-              <Text style={styles.modalText}>
-                The rose, a symbol of love and beauty, wields more than  efjust its enchanting looks. 
-                This popular bloom is a horticultural marvel with a history spanning 5,000 years. 
-                Beyond its ornamental charm, the rose has practical uses; its petals flavor foods,
-                 its hips are vitamin-rich, and its oils are treasured in perfumery
-              </Text>
-
+              {!showFunFacts ? (
+                // First screen content here
+                <View>
+                  {/* ... First Screen Content */}
+                  <Text style={styles.modalText}>
+                    We are{" "}
+                    <Text style={styles.boldText}>
+                      {modalContent.confidence}{" "}
+                    </Text>
+                    confident that this is a{" "}
+                    <Text style={styles.boldText}>
+                      {modalContent.predictedClassName}
+                    </Text>
+                  </Text>
+                  <Image
+                    source={{ uri: modalContent.imageUrl }}
+                    style={styles.modalImage}
+                  />
+                  <Text style={styles.modalText}>
+                    It also looks like a {"\n"}
+                    {modalContent.top3 &&
+                      modalContent.top3
+                        .filter(
+                          (item) =>
+                            item.class_name !== modalContent.predictedClassName
+                        ) // Filter out the primary prediction
+                        .map((item, index, arr) => {
+                          // Check if the current item is the last in the array
+                          const isLast = index === arr.length - 1;
+                          return (
+                            <Text key={index}>
+                              <Text style={styles.boldText}>
+                                {item.class_name}
+                              </Text>
+                              {!isLast ? " or a " : " :)"}
+                            </Text>
+                          );
+                        })}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.detailsButton}
+                    onPress={handleShowFunFacts}
+                  >
+                    <FontAwesome name="arrow-down" size={24} color="white" />
+                    <Text style={styles.buttonText}>Interesting facts</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                // Second screen content here
+                <View>
+                  {/* ... Second Screen Content */}
+                  <Text style={styles.boldText}>
+                    {"\n"}Here are some interesting facts about a{" "}
+                    {modalContent.predictedClassName}:
+                  </Text>
+                  <Text style={styles.modalDetailsText}>
+                    {"\n"}
+                    {"\n"}The rose, a symbol of love and beauty, wields more
+                    than efjust its enchanting looks. This popular bloom is a
+                    horticultural marvel with a history spanning 5,000 years.
+                    Beyond its ornamental charm, the rose has practical uses;
+                    its petals flavor foods, its hips are vitamin-rich, and its
+                    oils are treasured in perfumery The rose, a symbol of love
+                    and beauty, wields more than efjust its enchanting looks.
+                    This popular bloom is a horticultural marvel with a history
+                    spanning
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={handleGoBackUp}
+                  >
+                    <View style={styles.buttonContent}>
+                      <FontAwesome name="arrow-up" size={24} color="white" />
+                      <Text style={styles.buttonText}>Go back up</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -349,7 +394,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     backgroundColor: colors.focused,
-    paddingTop: 40,
+    paddingTop: 43,
     paddingLeft: 40,
     paddingRight: 40,
     marginTop: 9,
@@ -367,20 +412,22 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 10,
     borderWidth: 2,
+    top: 60,
   },
   modalText: {
     marginBottom: 15,
     textAlign: "center",
     fontSize: 20,
     color: "white",
+    top: 60,
   },
   buttonContent: {
     height: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    top: -30,
-    right: -130,
+    top: 10,
+    right: 30,
     color: "white",
   },
   buttonText: {
@@ -388,11 +435,31 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 18,
+    flexDirection: "row",
+  },
+  detailsButton: {
+    paddingBottom: 110,
+    paddingTop: 30,
+    elevation: 2,
+    top: 70,
+    right: -65,
+    flexDirection: "row",
+  },
+  backButton: {
+    paddingBottom: 92,
+    elevation: 2,
+    top: 50,
+    right: -30,
   },
   boldText: {
     fontWeight: "bold",
     color: "white",
     textAlign: "center",
     fontSize: 20,
+  },
+  modalDetailsText: {
+    textAlign: "justify",
+    fontSize: 20,
+    color: "white",
   },
 });
