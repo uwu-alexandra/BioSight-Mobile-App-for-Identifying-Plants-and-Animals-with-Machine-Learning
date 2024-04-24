@@ -33,3 +33,11 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+#ignore machine models
+src/__pycache__/flask.cpython-312.pyc
+backend/my_flower_classifier_model/variables/variables.index
+backend/my_flower_classifier_model/variables/variables.data-00000-of-00001
+backend/my_flower_classifier_model/saved_model.pb
+backend/my_flower_classifier_model/keras_metadata.pb
+backend/my_animal_classifier_model.h5

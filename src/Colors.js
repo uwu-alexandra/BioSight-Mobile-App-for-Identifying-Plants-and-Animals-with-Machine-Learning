@@ -1,8 +1,8 @@
 export const colors = {
   primary: "",
   secondary: "",
-  focused: "#319B00",
-  unfocused: "grey",
+  focused: "#659b5e",
+  unfocused: "#404040",
   text: "",
   background: "#f4f4f4",
 };
