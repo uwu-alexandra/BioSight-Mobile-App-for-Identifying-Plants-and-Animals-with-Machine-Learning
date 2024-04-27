@@ -150,7 +150,6 @@ export default function CameraButton() {
     }
   };
 
-  // Save the picture and send it to the server for identification
   const saveAndIdentifyPicture = async () => {
     if (image) {
       setSpinner(true);
@@ -160,36 +159,36 @@ export default function CameraButton() {
           const { predicted_class, confidence, top3 } = serverResponse;
           const imageUrl = await savePicture(image, predicted_class);
           if (imageUrl) {
-            {
-              setModalContent({
-                imageUrl,
+            setModalContent({
+              imageUrl,
+              predictedClassName: predicted_class,
+              confidence,
+              top3,
+            });
+            if (user && !user.isAnonymous) {
+              // Check if user is logged in and not a guest
+              const location = await Location.getCurrentPositionAsync({});
+              const now = new Date(); // Get current date and time
+              const markerData = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                imageUri: imageUrl,
                 predictedClassName: predicted_class,
                 confidence,
-                top3,
-              });
-              if (user && !user.isAnonymous) {
-                // Check if user is logged in and not a guest
-                const location = await Location.getCurrentPositionAsync({});
-                const markerData = {
-                  latitude: location.coords.latitude, //45.764274,
-                  longitude:  location.coords.longitude,
-                  imageUri: imageUrl,
-                  predictedClassName: predicted_class,
-                  confidence,
-                };
-                // Use a specific Firestore path based on user's UID
-                try {
-                  console.log("Tring to upload marker data:", markerData);
-                  await db
-                    .collection(`maps/${user.uid}/markers`)
-                    .add(markerData);
-                    console.log("Uploaded marker data");
-                } catch (error) {
-                  console.error("Failed to upload marker:", error);
-                  alert("Failed to upload marker.");
-                }
-                setModalVisible(true);
+                timestamp:  now.toISOString(),
+              };
+              // Use a specific Firestore path based on user's UID
+              try {
+                console.log("Trying to upload marker data:", markerData);
+                await db
+                  .collection(`maps/${user.uid}/markers`)
+                  .add(markerData);
+                console.log("Uploaded marker data");
+              } catch (error) {
+                console.error("Failed to upload marker:", error);
+                alert("Failed to upload marker.");
               }
+              setModalVisible(true);
             }
           }
         }
@@ -202,7 +201,7 @@ export default function CameraButton() {
       console.log("No image available to send.");
       setSpinner(false); // Ensure spinner is turned off if there is no image
     }
-  };
+  };  
 
   return (
     <View style={styles.container}>
@@ -433,6 +432,7 @@ const styles = StyleSheet.create({
     paddingTop: 43,
     paddingLeft: 40,
     paddingRight: 40,
+    paddingBottom: 80,
     marginTop: 9,
     shadowColor: colors.focused,
     shadowOpacity: 0.5,
