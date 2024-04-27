@@ -1,18 +1,27 @@
 import React, { useState, useRef } from "react";
-import { Text, View, StyleSheet, Image, Modal, TouchableOpacity, ScrollView} from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Image,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import Constants from "expo-constants";
 import { Camera, CameraType } from "expo-camera";
 import Spinner from "react-native-loading-spinner-overlay";
-import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as Location from "expo-location";
 import CustomButton from "./components/Button";
-import { auth, storage } from "../firebase.config";
+import { auth, storage, db } from "../firebase.config";
 import { useEffect } from "react";
 import { colors } from "./Colors";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
 
 export default function CameraButton() {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(null);
   const [image, setImage] = useState(null);
   const [type, setType] = useState(Camera.Constants.Type.back);
   const [flash, setFlash] = useState(Camera.Constants.FlashMode.off);
@@ -21,14 +30,20 @@ export default function CameraButton() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({});
   const [showFunFacts, setShowFunFacts] = useState(false);
+  const user = auth.currentUser;
+  const userId = user.uid;
+  const isGuest = user ? user.isAnonymous : false;
 
-  // Function to request camera permissions and set the state for function components
+  // Function to request camera and location permissions
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasCameraPermission(status === "granted");
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      const locationStatus = await Location.requestForegroundPermissionsAsync();
+      setHasCameraPermission(cameraStatus.status === "granted");
+      setHasLocationPermission(locationStatus.status === "granted");
     })();
   }, []);
+
   const handleShowFunFacts = () => {
     setShowFunFacts(true);
   };
@@ -71,10 +86,6 @@ export default function CameraButton() {
     // Resize the image before saving it
     const resizedImageUri = await resizeImage(fileUri);
     try {
-      const asset = await MediaLibrary.createAssetAsync(resizedImageUri);
-      const user = auth.currentUser;
-      const isGuest = user ? user.isAnonymous : false;
-      const userId = user.uid;
       const response = await fetch(resizedImageUri);
       const blob = await response.blob();
 
@@ -127,7 +138,7 @@ export default function CameraButton() {
         const jsonResponse = await response.json();
         console.log("Server response:", jsonResponse);
         // Return the entire JSON response
-        return jsonResponse; 
+        return jsonResponse;
       } else {
         const errorResponse = await response.text();
         throw new Error(`Failed to send file, status: ${response.status}`);
@@ -143,32 +154,55 @@ export default function CameraButton() {
   const saveAndIdentifyPicture = async () => {
     if (image) {
       setSpinner(true);
-      const serverResponse = await sendImageToServer(image);
-      if (serverResponse) {
-        // Extract the predicted class, confidence
-        const { predicted_class, confidence, top3 } = serverResponse;
-        const imageUrl = await savePicture(image, predicted_class);
-        // If the image was saved successfully, show the modal with the results
-        if (imageUrl) {
-          setModalContent({
-            imageUrl,
-            predictedClassName: predicted_class,
-            confidence,
-            top3,
-          });
-          setModalVisible(true);
+      try {
+        const serverResponse = await sendImageToServer(image);
+        if (serverResponse) {
+          const { predicted_class, confidence, top3 } = serverResponse;
+          const imageUrl = await savePicture(image, predicted_class);
+          if (imageUrl) {
+            {
+              setModalContent({
+                imageUrl,
+                predictedClassName: predicted_class,
+                confidence,
+                top3,
+              });
+              if (user && !user.isAnonymous) {
+                // Check if user is logged in and not a guest
+                const location = await Location.getCurrentPositionAsync({});
+                const markerData = {
+                  latitude: location.coords.latitude, //45.764274,
+                  longitude:  location.coords.longitude,
+                  imageUri: imageUrl,
+                  predictedClassName: predicted_class,
+                  confidence,
+                };
+                // Use a specific Firestore path based on user's UID
+                try {
+                  console.log("Tring to upload marker data:", markerData);
+                  await db
+                    .collection(`maps/${user.uid}/markers`)
+                    .add(markerData);
+                    console.log("Uploaded marker data");
+                } catch (error) {
+                  console.error("Failed to upload marker:", error);
+                  alert("Failed to upload marker.");
+                }
+                setModalVisible(true);
+              }
+            }
+          }
         }
+      } catch (error) {
+        console.error("Error during identification or saving:", error.message);
+        alert("Failed to process the image.");
       }
-      setSpinner(false);
+      setSpinner(false); // Ensure spinner is turned off after all operations
     } else {
       console.log("No image available to send.");
+      setSpinner(false); // Ensure spinner is turned off if there is no image
     }
   };
-
-  // If the user denies the camera permission, show a message
-  if (hasCameraPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
 
   return (
     <View style={styles.container}>
@@ -181,6 +215,8 @@ export default function CameraButton() {
       />
       {hasCameraPermission === false ? (
         <Text>No access to camera</Text>
+      ) : hasLocationPermission === false ? (
+        <Text>No access to location</Text>
       ) : (
         <>
           {!image ? (

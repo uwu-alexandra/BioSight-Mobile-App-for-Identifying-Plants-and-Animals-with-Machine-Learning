@@ -18,7 +18,36 @@ if (!firebase.apps.length) {
 }
 
 const auth = firebase.auth();
-const firestore = firebase.firestore();
+const db = firebase.firestore();
 const storage = firebase.storage();
 
-export { firebase, auth, firestore, storage};
+// Default credentials (note: hardcoding credentials like this is not recommended for production apps)
+const defaultEmail = "abc@gmail.com";
+const defaultPassword = "123456";
+
+// Function to perform default login
+function defaultLogin() {
+    auth.signInWithEmailAndPassword(defaultEmail, defaultPassword)
+        .then((userCredential) => {
+            // Signed in
+            const user = userCredential.user;
+            console.log('User logged in automatically with default credentials');
+        })
+        .catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            console.error('Error logging in with default credentials:', errorCode, errorMessage);
+        });
+}
+
+// Check if the user is already logged in when the app starts
+auth.onAuthStateChanged(user => {
+  if (user) {
+    console.log('User is already logged in:', user.email);
+  } else {
+    console.log('No user is logged in, attempting default login');
+    defaultLogin(); // Attempt to log in with default credentials if no user is logged in
+  }
+});
+
+export { firebase, auth, storage, db };
