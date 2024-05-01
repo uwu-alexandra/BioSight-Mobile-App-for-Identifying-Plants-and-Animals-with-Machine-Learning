@@ -168,6 +168,7 @@ export default function CameraButton() {
             if (user && !user.isAnonymous) {
               // Check if user is logged in and not a guest
               const location = await Location.getCurrentPositionAsync({});
+              const userEmail = isGuest ? `guest` : user.email;
               const now = new Date(); // Get current date and time
               const markerData = {
                 latitude: location.coords.latitude,
@@ -176,6 +177,7 @@ export default function CameraButton() {
                 predictedClassName: predicted_class,
                 confidence,
                 timestamp:  now.toISOString(),
+                identifier: userEmail,
               };
               // Use a specific Firestore path based on user's UID
               try {
