@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     width: 400,
     height: 120,
     marginBottom: 20,
-    transform: [{ scale: 0.5 }],
+    transform: [{ scale: 1 }],
     paddingBottom: 30,
   },
   inputContainer: {
