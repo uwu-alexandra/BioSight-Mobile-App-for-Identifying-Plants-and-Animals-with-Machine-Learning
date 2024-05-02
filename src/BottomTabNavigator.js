@@ -13,6 +13,7 @@ import LoginScreen from "./screens/Login";
 import { colors } from "./Colors";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase.config";
+import CategoryScreen from "./screens/Category";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -39,6 +40,16 @@ const AuthStack = () => (
     />
   </Stack.Navigator>
 );
+
+const SightsStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="SightsMain" component={SightsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="CategoryScreen" component={CategoryScreen} options={({ route }) => ({ title: route.params.category })} />
+    </Stack.Navigator>
+  );
+};
+
 
 const MainStack = () => {
   const user = useUser();
@@ -84,7 +95,7 @@ const MainStack = () => {
 
       <Tab.Screen
         name={"Sights"}
-        component={SightsScreen}
+        component={SightsStack} 
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ focused }) => (
