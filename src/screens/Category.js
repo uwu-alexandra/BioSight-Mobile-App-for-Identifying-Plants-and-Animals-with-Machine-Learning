@@ -1,133 +1,221 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
-  SafeAreaView, StyleSheet, View, Text, FlatList,
-  TouchableOpacity, Image, Dimensions, Modal, Animated
-} from 'react-native';
+  SafeAreaView,
+  StyleSheet,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  Modal,
+  Animated,
+} from "react-native";
+import { colors } from "../Colors";
 import { auth, db } from "../../firebase.config";
+import Spinner from "react-native-loading-spinner-overlay";
+import animalsData from "../../backend/class_names_animals.json";
+import plantsData from "../../backend/class_names_plants.json";
 
-import animalsData from '../../backend/class_names_animals.json';
-import plantsData from '../../backend/class_names_plants.json';
-
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const CategoryScreen = ({ route }) => {
   const { category } = route.params;
   const [classes, setClasses] = useState([]);
-  const [sortMethod, setSortMethod] = useState('alphabetical');
-  const [modalVisible, setModalVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(1)).current;  // Initial opacity for images is 1
+  const [sortMethod, setSortMethod] = useState("alphabetical");
+  const [loadingVisible, setLoadingVisible] = useState(false);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const user = auth.currentUser;
 
   useEffect(() => {
-    const fetchImages = async () => {
-      if (!user || !user.uid) return;
-      fadeOut();  // Start by fading out existing images
-
-
-      const userImagesRef = db.collection("bestiary").doc(user.uid).collection("sights");
-      try {
-        const snapshot = await userImagesRef.get();
-        if (snapshot.empty) {
-          console.log("No matching documents.");
-          return;
-        }
-
-        const imageData = {};
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const className = data.predictedClassName;
-          const imageUri = data.imageUri;
-
-          if (!imageData[className]) {
-            imageData[className] = [];
-          }
-          imageData[className].push(imageUri);
-        });
-
-        const data = category.toLowerCase() === 'animals' ? animalsData : plantsData;
-        let updatedClasses = data.map(cls => ({
-          name: cls,
-          thumbnails: imageData[cls] || []
-        }));
-
-        sortClasses(updatedClasses); // Initial sort based on default method
-      } catch (error) {
-        console.error("Error fetching images:", error);
-      }
-    };
-
     fetchImages();
   }, [category, user]);
 
-  const sortClasses = (classes) => {
-    switch (sortMethod) {
-      case 'discovered':
-        classes.sort((a, b) => b.thumbnails.length - a.thumbnails.length);
-        break;
-      case 'undiscovered':
-        classes.sort((a, b) => a.thumbnails.length - b.thumbnails.length);
-        break;
-      case 'alphabetical':
-      default:
-        classes.sort((a, b) => a.name.localeCompare(b.name));
+
+  const fetchImages = async () => {
+    if (!user || !user.uid) return;
+  
+    setLoadingVisible(true); // Show loading modal
+    fadeOut();
+  
+    const userImagesRef = db
+      .collection("bestiary")
+      .doc(user.uid)
+      .collection("sights");
+  
+    try {
+      const snapshot = await userImagesRef.get();
+      fadeIn();
+      if (snapshot.empty) {
+        console.log("No matching documents.");
+        setTimeout(() => setLoadingVisible(false), 3000);
+        return;
+      }
+  
+      const imageData = {};
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const className = data.predictedClassName;
+        const imageUri = data.imageUri;
+        if (!imageData[className]) imageData[className] = [];
+        imageData[className].push(imageUri);
+      });
+  
+      const data = category.toLowerCase() === "animals" ? animalsData : plantsData;
+      let updatedClasses = data.map((cls) => ({
+        name: cls,
+        thumbnails: imageData[cls] || [],
+      }));
+  
+      sortClasses(updatedClasses);
+      setTimeout(() => setLoadingVisible(false), 3000);
+    } catch (error) {
+      console.error("Error fetching images:", error);
+      fadeIn();
+      setTimeout(() => setLoadingVisible(false), 3000);
     }
-    setClasses(classes);
-    fadeIn();  // After sorting, fade the images back in
+  };
+  
+
+  const sortClasses = (classes) => {
+    let sortedClasses = [...classes];
+    switch (sortMethod) {
+      case "discovered":
+        sortedClasses.sort((a, b) => b.thumbnails.length - a.thumbnails.length);
+        break;
+      case "undiscovered":
+        sortedClasses.sort((a, b) => a.thumbnails.length - b.thumbnails.length);
+        break;
+      case "discovered":
+      default:
+        sortedClasses.sort((a, b) => b.thumbnails.length - a.thumbnails.length);
+    }
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setClasses(sortedClasses));
   };
 
   const fadeOut = () => {
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 500,
-      useNativeDriver: true
+      duration: 300,
+      useNativeDriver: true,
     }).start();
   };
 
   const fadeIn = () => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 500,
-      useNativeDriver: true
+      duration: 300,
+      useNativeDriver: true,
     }).start();
   };
+
   useEffect(() => {
-    sortClasses([...classes]); // Re-sort when sort method changes
+    if (classes.length) {
+      sortClasses(classes); // Re-sort when sort method changes
+    }
   }, [sortMethod]);
 
-  const totalClasses = category.toLowerCase() === 'animals' ? animalsData.length : plantsData.length;
-  const discoveredClasses = classes.filter(cls => cls.thumbnails.length > 0).length;
+  const totalClasses =
+    category.toLowerCase() === "animals"
+      ? animalsData.length
+      : plantsData.length;
+  const discoveredClasses = classes.filter(
+    (cls) => cls.thumbnails.length > 0
+  ).length;
+
+  const renderItem = ({ item }) => (
+    <Animated.View style={[styles.item, { opacity: fadeAnim }]}>
+      <TouchableOpacity
+        onPress={() => console.log("Item selected:", item.name)}
+      >
+        {item.thumbnails.length > 0 ? (
+          <Image
+            source={{ uri: item.thumbnails[0] }}
+            style={styles.thumbnail}
+          />
+        ) : (
+          <View style={styles.thumbnailPlaceholder}>
+            <Text>???</Text>
+          </View>
+        )}
+        <Text style={styles.itemText}>{item.name}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.summaryText}>Discovered {discoveredClasses} out of {totalClasses} available! Keep going :)</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.sortButton}>
+        <Text style={styles.summaryText}>
+          Discovered {discoveredClasses} out of {totalClasses} available! Keep going:)
+        </Text>
+        <TouchableOpacity
+          onPress={() => setSortModalVisible(true)}
+          style={styles.sortButton}
+        >
           <Text>Sort: {sortMethod}</Text>
         </TouchableOpacity>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              {['alphabetical', 'discovered', 'undiscovered'].map((method, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.modalButton}
-                  onPress={() => {
-                    setSortMethod(method);
-                    setModalVisible(false);
-                  }}
-                >
-                  <Text>{method}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </Modal>
       </View>
+  
+      {/* Loading Modal */}
+      <Spinner
+        visible={loadingVisible}
+        textContent={'Loading...'}
+        textStyle={styles.spinnerText}
+        color={colors.focused}
+        overlayColor="rgba(255, 255, 255, 0.8)"
+      />
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={loadingVisible}
+        onRequestClose={() => setLoadingVisible(false)}
+      >
+        
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Loading...</Text>
+          </View>
+        </View>
+      </Modal>
+  
+      {/* Sorting Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={sortModalVisible}
+        onRequestClose={() => setSortModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalViewSorting}>
+            {["alphabetical", "discovered", "undiscovered"].map((method, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.modalButton}
+                onPress={() => {
+                  setSortMethod(method);
+                  setSortModalVisible(false);
+                }}
+              >
+                <Text>{method}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
+  
       <FlatList
         data={classes}
         renderItem={renderItem}
@@ -137,29 +225,34 @@ const CategoryScreen = ({ route }) => {
       />
     </SafeAreaView>
   );
-};
-
-const renderItem = ({ item }) => (
-  <TouchableOpacity
-    style={styles.item}
-    onPress={() => {
-        console.log('Item selected:', item.name);
-    }}
-  >
-    {item.thumbnails.length > 0 ? (
-      <Image source={{ uri: item.thumbnails[0] }} style={styles.thumbnail} />
-    ) : (
-      <View style={styles.thumbnailPlaceholder}>
-        <Text>???</Text>
-      </View>
-    )}
-    <Text style={styles.itemText}>{item.name}</Text>
-  </TouchableOpacity>
-);
+};  
 
 const styles = StyleSheet.create({
-  container: {
+  // Add or adjust existing styles as needed
+  centeredView: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalButton: {
+    padding: 10,
+    elevation: 2,
   },
   header: {
     padding: 10,
@@ -210,6 +303,16 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   modalView: {
+    backgroundColor: 'white',
+    height: '70%',
+    width: '100%',
+    paddingTop: 43,
+    paddingLeft: 40,
+    paddingRight: 40,
+    paddingBottom: 80,
+    opacity: 0.95,
+  },
+  modalViewSorting: {
     margin: 20,
     backgroundColor: 'white',
     borderRadius: 20,
@@ -227,6 +330,15 @@ const styles = StyleSheet.create({
   modalButton: {
     padding: 10,
     elevation: 2,
+  },
+  modalText: {
+    fontSize: 24,
+    marginBottom: 15,
+    textAlign: 'center',
+    color: colors.focused,
+  },
+  spinnerText: {
+    color: colors.focused,
   },
 });
 

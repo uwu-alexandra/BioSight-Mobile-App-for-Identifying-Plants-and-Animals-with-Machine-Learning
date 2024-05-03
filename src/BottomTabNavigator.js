@@ -44,7 +44,7 @@ const AuthStack = () => (
 const SightsStack = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="SightsMain" component={SightsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Back" component={SightsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="CategoryScreen" component={CategoryScreen} options={({ route }) => ({ title: route.params.category })} />
     </Stack.Navigator>
   );
