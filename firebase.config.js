@@ -22,8 +22,8 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 
 // Default credentials (note: hardcoding credentials like this is not recommended for production apps)
-const defaultEmail = "abc@gmail.com";
-//const defaultEmail = "alexandra.sofronea27@gmail.com";
+//const defaultEmail = "abc@gmail.com";
+const defaultEmail = "alexandra.sofronea27@gmail.com";
 const defaultPassword = "123456";
 
 // Function to perform default login

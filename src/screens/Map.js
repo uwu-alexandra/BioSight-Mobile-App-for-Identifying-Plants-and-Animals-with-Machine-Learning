@@ -102,7 +102,7 @@ const MapScreen = () => {
         </TouchableOpacity>
         <Text style={styles.detailsText}>
           {identificationText} a {marker.predictedClassName} with{" "}
-          {marker.confidence}% confidence
+          {marker.confidence} confidence
         </Text>
         <Text style={styles.detailsText}>
           Location lat: {parseFloat(marker.latitude).toFixed(3)} & long:{" "}

@@ -179,6 +179,11 @@ export default function CameraButton() {
                 timestamp:  now.toISOString(),
                 identifier: userEmail,
               };
+              const sightData = {
+                imageUri: imageUrl,
+                predictedClassName: predicted_class,
+              };
+
               // Use a specific Firestore path based on user's UID
               try {
                 console.log("Trying to upload marker data:", markerData);
@@ -189,6 +194,17 @@ export default function CameraButton() {
               } catch (error) {
                 console.error("Failed to upload marker:", error);
                 alert("Failed to upload marker.");
+              }
+
+              try {
+                console.log("Trying to upload sight data:", sightData);
+                await db
+                  .collection(`bestiary/${user.uid}/sights`)
+                  .add(sightData);
+                console.log("Uploaded sight data");
+              } catch (error) {
+                console.error("Failed to upload sight:", error);
+                alert("Failed to upload sight.");
               }
               setModalVisible(true);
             }
