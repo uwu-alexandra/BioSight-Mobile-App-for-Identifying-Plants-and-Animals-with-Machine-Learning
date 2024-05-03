@@ -10,7 +10,9 @@ import {
   Dimensions,
   Modal,
   Animated,
+  Alert,
 } from "react-native";
+import { AntDesign } from "@expo/vector-icons";
 import { colors } from "../Colors";
 import { auth, db } from "../../firebase.config";
 import Spinner from "react-native-loading-spinner-overlay";
@@ -25,6 +27,9 @@ const CategoryScreen = ({ route }) => {
   const [sortMethod, setSortMethod] = useState("alphabetical");
   const [loadingVisible, setLoadingVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [slideshowVisible, setSlideshowVisible] = useState(false);
+  const [currentImages, setCurrentImages] = useState([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const user = auth.currentUser;
 
@@ -32,18 +37,17 @@ const CategoryScreen = ({ route }) => {
     fetchImages();
   }, [category, user]);
 
-
   const fetchImages = async () => {
     if (!user || !user.uid) return;
-  
-    setLoadingVisible(true); // Show loading modal
+
+    setLoadingVisible(true);
     fadeOut();
-  
+
     const userImagesRef = db
       .collection("bestiary")
       .doc(user.uid)
       .collection("sights");
-  
+
     try {
       const snapshot = await userImagesRef.get();
       fadeIn();
@@ -52,7 +56,7 @@ const CategoryScreen = ({ route }) => {
         setTimeout(() => setLoadingVisible(false), 3000);
         return;
       }
-  
+
       const imageData = {};
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -61,13 +65,14 @@ const CategoryScreen = ({ route }) => {
         if (!imageData[className]) imageData[className] = [];
         imageData[className].push(imageUri);
       });
-  
-      const data = category.toLowerCase() === "animals" ? animalsData : plantsData;
+
+      const data =
+        category.toLowerCase() === "animals" ? animalsData : plantsData;
       let updatedClasses = data.map((cls) => ({
         name: cls,
         thumbnails: imageData[cls] || [],
       }));
-  
+
       sortClasses(updatedClasses);
       setTimeout(() => setLoadingVisible(false), 3000);
     } catch (error) {
@@ -76,7 +81,6 @@ const CategoryScreen = ({ route }) => {
       setTimeout(() => setLoadingVisible(false), 3000);
     }
   };
-  
 
   const sortClasses = (classes) => {
     let sortedClasses = [...classes];
@@ -87,7 +91,9 @@ const CategoryScreen = ({ route }) => {
       case "undiscovered":
         sortedClasses.sort((a, b) => a.thumbnails.length - b.thumbnails.length);
         break;
-      case "discovered":
+      case "alphabetical":
+        sortedClasses.sort((a, b) => a.name.localeCompare(b.name));
+        break;
       default:
         sortedClasses.sort((a, b) => b.thumbnails.length - a.thumbnails.length);
     }
@@ -135,10 +141,32 @@ const CategoryScreen = ({ route }) => {
     (cls) => cls.thumbnails.length > 0
   ).length;
 
+  const goToNext = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % currentImages.length);
+  };
+
+  const goToPrevious = () => {
+    setCurrentImageIndex(
+      (prevIndex) =>
+        (prevIndex - 1 + currentImages.length) % currentImages.length
+    );
+  };
+
   const renderItem = ({ item }) => (
     <Animated.View style={[styles.item, { opacity: fadeAnim }]}>
       <TouchableOpacity
-        onPress={() => console.log("Item selected:", item.name)}
+        onPress={() => {
+          if (item.thumbnails.length === 0) {
+            Alert.alert(
+              "No Images Available",
+              "There are no photos for this category yet! Identify some."
+            );
+          } else {
+            setCurrentImages(item.thumbnails);
+            setCurrentImageIndex(0);
+            setSlideshowVisible(true);
+          }
+        }}
       >
         {item.thumbnails.length > 0 ? (
           <Image
@@ -159,7 +187,8 @@ const CategoryScreen = ({ route }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.summaryText}>
-          Discovered {discoveredClasses} out of {totalClasses} available! Keep going:)
+          Discovered {classes.filter((cls) => cls.thumbnails.length > 0).length}{" "}
+          out of {totalClasses} available! Keep going:)
         </Text>
         <TouchableOpacity
           onPress={() => setSortModalVisible(true)}
@@ -168,29 +197,55 @@ const CategoryScreen = ({ route }) => {
           <Text>Sort: {sortMethod}</Text>
         </TouchableOpacity>
       </View>
-  
-      {/* Loading Modal */}
+
       <Spinner
         visible={loadingVisible}
-        textContent={'Loading...'}
+        textContent={"Loading..."}
         textStyle={styles.spinnerText}
         color={colors.focused}
         overlayColor="rgba(255, 255, 255, 0.8)"
       />
+
+      {/* Slideshow Modal */}
       <Modal
         animationType="slide"
         transparent={true}
-        visible={loadingVisible}
-        onRequestClose={() => setLoadingVisible(false)}
+        visible={slideshowVisible}
+        onRequestClose={() => setSlideshowVisible(false)}
       >
-        
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalText}>Loading...</Text>
+            <TouchableOpacity
+              onPress={goToPrevious}
+              style={[styles.navButton, styles.leftNavButton]}
+            >
+              <AntDesign name="left" size={24} color="black" />
+            </TouchableOpacity>
+            <Text style={styles.counterText}>
+              {currentImageIndex + 1} / {currentImages.length}
+            </Text>
+            <Image
+              source={{ uri: currentImages[currentImageIndex] }}
+              style={styles.slideshowImage}
+            />
+
+            <TouchableOpacity
+              onPress={goToNext}
+              style={[styles.navButton, styles.rightNavButton]}
+            >
+              <AntDesign name="right" size={24} color="black" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setSlideshowVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
-  
+
       {/* Sorting Modal */}
       <Modal
         animationType="slide"
@@ -200,22 +255,24 @@ const CategoryScreen = ({ route }) => {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalViewSorting}>
-            {["alphabetical", "discovered", "undiscovered"].map((method, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.modalButton}
-                onPress={() => {
-                  setSortMethod(method);
-                  setSortModalVisible(false);
-                }}
-              >
-                <Text>{method}</Text>
-              </TouchableOpacity>
-            ))}
+            {["alphabetical", "discovered", "undiscovered"].map(
+              (method, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.modalButton}
+                  onPress={() => {
+                    setSortMethod(method);
+                    setSortModalVisible(false);
+                  }}
+                >
+                  <Text>{method}</Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
         </View>
       </Modal>
-  
+
       <FlatList
         data={classes}
         renderItem={renderItem}
@@ -225,23 +282,39 @@ const CategoryScreen = ({ route }) => {
       />
     </SafeAreaView>
   );
-};  
+};
 
 const styles = StyleSheet.create({
-  // Add or adjust existing styles as needed
   centeredView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 22,
   },
   modalView: {
     margin: 20,
-    backgroundColor: 'white',
+    top: 25,
+    height: "65%",
+    backgroundColor: "white",
     borderRadius: 20,
     padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalViewSorting: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -256,29 +329,29 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 10,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
   },
   summaryText: {
-    fontSize: 17,
+    fontSize: 16,
     paddingBottom: 15,
     paddingTop: 10,
   },
   sortButton: {
     marginTop: 5,
     padding: 10,
-    backgroundColor: '#ddd',
+    backgroundColor: "#ddd",
     borderRadius: 5,
   },
   list: {
-    justifyContent: 'space-around',
+    justifyContent: "space-around",
   },
   item: {
     margin: 5,
     width: (width - 30) / 3,
     height: 150,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
   },
   thumbnail: {
     width: 90,
@@ -288,57 +361,79 @@ const styles = StyleSheet.create({
   thumbnailPlaceholder: {
     width: 90,
     height: 90,
-    backgroundColor: '#ccc',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
   },
   itemText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 5,
   },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
+  slideshowImage: {
+    width: width - 40,
+    height: 300,
+    resizeMode: "contain",
+    marginHorizontal: 10,
   },
-  modalView: {
-    backgroundColor: 'white',
-    height: '70%',
-    width: '100%',
-    paddingTop: 43,
-    paddingLeft: 40,
-    paddingRight: 40,
-    paddingBottom: 80,
-    opacity: 0.95,
-  },
-  modalViewSorting: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
+  closeButton: {
+    padding: 10,
+    backgroundColor: "#ddd",
+    borderRadius: 5,
+    alignSelf: "center",
+    marginTop: 20,
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
-  modalButton: {
+  closeButtonText: {
+    fontSize: 18,
+  },
+  counterText: {
+    fontSize: 18,
+    marginVertical: 10,
+    fontWeight: "bold",
+  },
+  navigationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  navButton: {
     padding: 10,
-    elevation: 2,
+    backgroundColor: "#ddd",
+    borderRadius: 5,
   },
-  modalText: {
+  navButtonText: {
     fontSize: 24,
-    marginBottom: 15,
-    textAlign: 'center',
-    color: colors.focused,
+    color: "black",
   },
-  spinnerText: {
-    color: colors.focused,
+  leftNavButton: {
+    position: "absolute",
+    left: 35,
+    top: 200,
+    zIndex: 1, // necessary to overlay the image
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+  },
+  rightNavButton: {
+    position: "absolute",
+    right: 35,
+    top: 200,
+    zIndex: 1, // necessary to overlay the image
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
   },
 });
 
