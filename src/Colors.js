@@ -1,17 +1,18 @@
 export const colors = {
-  primary: "",
-  secondary: "",
   focused: "#659b5e",
   unfocused: "#404040",
-  text: "",
+  text: "black",
   background: "#f4f4f4",
+  trackColor: "#659b5e",
+  shadowColor: "black",
 };
 
-// export const darkColors = {
-//   primary: "",
-//   secondary: "",
-//   focused: "",
-//   unfocused: "",
-//   text: "",
-//   background: "",
-// };
+export const darkColors = {
+  focused: "#659b5e",
+  unfocused: "#404040",
+  text: "white",
+  background: "#272829",
+  trackColor: "#659b5e",
+  special: "red",
+  shadowColor: "white",
+};
