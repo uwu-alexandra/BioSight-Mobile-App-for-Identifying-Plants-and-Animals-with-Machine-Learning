@@ -45,8 +45,47 @@ export default function CameraButton() {
   }, []);
 
   const handleShowFunFacts = () => {
+    fetchOpenAIData(modalContent.predictedClassName); // Trigger fetching fun facts when user presses the button
     setShowFunFacts(true);
   };
+
+    // Function to fetch data from OpenAI
+    const fetchOpenAIData = async (predictedClassName) => {
+      const text = `In 125 tokens, tell me something interesting about ${predictedClassName}.`;
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: "POST",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${'sk-proj-'}` ,
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: 'system', content: 'You are a scientist of birds and animals.' }, { role: 'user', content: text }],
+            max_tokens: 150,
+            temperature: 0.7,
+            top_p: 1
+          })
+        });
+  
+        const data = await response.json();
+        if (response.ok) {
+          setModalContent(prevState => ({
+            ...prevState,
+            funFacts: data.choices[0].message.content.trim() || 'No fun facts found'
+          }));
+        } else {
+          throw new Error(`Failed to fetch fun facts: ${data.error?.message}`);
+        }
+      } catch (error) {
+        console.error('Error fetching fun facts:', error);
+        setModalContent(prevState => ({
+          ...prevState,
+          funFacts: `Failed to fetch fun facts: ${error.message}`
+        }));
+      }
+    };
 
   // Function to go back to the first screen
   const handleGoBackUp = () => {
@@ -208,6 +247,7 @@ export default function CameraButton() {
               }
               setModalVisible(true);
             }
+            setModalVisible(true);
           }
         }
       } catch (error) {
@@ -390,16 +430,8 @@ export default function CameraButton() {
                     {modalContent.predictedClassName}:
                   </Text>
                   <Text style={styles.modalDetailsText}>
-                    {"\n"}
-                    {"\n"}The rose, a symbol of love and beauty, wields more
-                    than efjust its enchanting looks. This popular bloom is a
-                    horticultural marvel with a history spanning 5,000 years.
-                    Beyond its ornamental charm, the rose has practical uses;
-                    its petals flavor foods, its hips are vitamin-rich, and its
-                    oils are treasured in perfumery The rose, a symbol of love
-                    and beauty, wields more than efjust its enchanting looks.
-                    This popular bloom is a horticultural marvel with a history
-                    spanning
+                  {"\n"}{modalContent.funFacts}
+
                   </Text>
                   <TouchableOpacity
                     style={styles.backButton}
