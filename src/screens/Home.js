@@ -1,13 +1,81 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, ScrollView, Image } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, Animated } from "react-native";
 import classData from "../../backend/combined_class_names.json";
 import animalClasses from "../../backend/class_names_animals.json";
 import plantClasses from "../../backend/class_names_plants.json";
 
 const HomeScreen = () => {
   const [dailyClass, setDailyClass] = useState("");
-  const [animalData, setAnimalData] = useState(null);
+  const [funFacts, setFunFacts] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const scaleAnim = useRef(new Animated.Value(1)).current; // Initial scale is 1
+
+  useEffect(() => {
+    const today = new Date();
+    const dateString = `${today.getFullYear()}${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}${today.getDate().toString().padStart(2, "0")}`;
+    const index = parseInt(dateString, 10) % classData.length;
+    const selectedClass = classData[index];
+    setDailyClass(selectedClass);
+    console.log("Selected class set to:", selectedClass); // Debug: Check the selected class
+
+    if (animalClasses.includes(selectedClass) || plantClasses.includes(selectedClass)) {
+      const categoryClass = animalClasses.includes(selectedClass) ? 'animal' : 'plant';
+      const text = `In 100-150 tokens, tell me something interesting about ${selectedClass}.`;
+      fetchOpenAI(text);
+    }
+
+    fetchImage(selectedClass);
+  }, []);
+
+  const triggerAnimation = () => {
+    console.log("Animation triggered"); // Debug: Confirm this function is called
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.5, // Increase the scale to make it more noticeable
+        duration: 500, // Increase duration to see the effect clearly
+        useNativeDriver: true
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1, // Return to normal size
+        duration: 500,
+        useNativeDriver: true
+      })
+    ]).start(() => console.log("Animation completed")); // Debug: Check if the animation completes
+  };
+
+  const fetchOpenAI = async (text) => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: "POST",
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${'sk-proj-'}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: 'system', content: 'You are a scientist of birds and animals.' }, { role: 'user', content: text }],
+          max_tokens: 150,
+          temperature: 0.7,
+          top_p: 1
+        })
+      });
+
+      const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`Failed to fetch fun facts: ${data.error?.message}`);
+    }
+
+    // Accessing the content from the nested message object
+    const funFact = data.choices[0].message.content.trim() || 'No fun facts found';
+    setFunFacts(funFact);
+  } catch (error) {
+    console.error('Error fetching fun facts:', error);
+    setFunFacts(`Failed to fetch fun facts: ${error.message}`);
+  }
+};
 
   const fetchImage = (query) => {
     fetch(
@@ -28,227 +96,23 @@ const HomeScreen = () => {
         setImageUrl(""); // Handle error or set a default image
       });
   };
-
-  useEffect(() => {
-    const today = new Date();
-    const dateString = `${today.getFullYear()}${(today.getMonth() + 5)
-      .toString()
-      .padStart(2, "0")}${today.getDate().toString().padStart(2, "0")}`;
-    const index = parseInt(dateString, 10) % classData.length;
-    const selectedClass = classData[index];
-    setDailyClass(selectedClass);
-
-    const apiKey = "vIvKJ5sbGV9hRWX4wVfVeguOZ0o528f-IRMvVvaVq1U"; // Replace with your actual Trefle API Key
-
-    if (animalClasses.includes(selectedClass)) {
-      fetch(
-        `https://api.api-ninjas.com/v1/animals?name=${encodeURIComponent(
-          selectedClass
-        )}`,
-        {
-          headers: { "X-Api-Key": "4QzVmj4lmooDOFeukjtbrw==zbCUHZjjbiWrqLlD" },
-        }
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          setAnimalData(data[0]);
-          fetchImage(selectedClass);
-        })
-        .catch((error) => {
-          console.error("Error fetching animal data:", error);
-          setAnimalData(null);
-        });
-    } else if (plantClasses.includes(selectedClass)) {
-      const searchUrl = `https://trefle.io/api/v1/plants/search?q=${encodeURIComponent(
-        selectedClass
-      )}&token=${apiKey}`;
-      fetch(searchUrl)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data && data.data && data.data.length > 0) {
-            setAnimalData(data.data[0]); // Directly use the detailed data from the search result
-            fetchImage(selectedClass);
-          } else {
-            console.error("No results found for the query:", selectedClass);
-            setAnimalData(null);
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching plant search results:", error);
-          setAnimalData(null);
-        });
-    } else {
-      console.error("Unknown class:", selectedClass);
-      setAnimalData(null);
-    }
-  }, []);
-
-  const formattedDate = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const renderAnimalDetails = (animalData) => {
-    if (!animalData) return null;
-
-    return (
-      <View>
-        <Text style={styles.title}>
-          {animalData.name} is a{" "}
-          <Text style={styles.bold}>{animalData.characteristics.type}</Text>{" "}
-          with a lifespan of approximately{" "}
-          <Text style={styles.bold}>{animalData.characteristics.lifespan}</Text>
-          .
-        </Text>
-        <Text style={styles.title}>
-          It can reach a top speed of{" "}
-          <Text style={styles.bold}>
-            {animalData.characteristics.top_speed}
-          </Text>{" "}
-          and primarily lives in{" "}
-          <Text style={styles.bold}>{animalData.characteristics.habitat}</Text>.
-        </Text>
-        <Text style={styles.title}>
-          Its diet consists mainly of{" "}
-          <Text style={styles.bold}>{animalData.characteristics.diet}</Text>,
-          with{" "}
-          <Text style={styles.bold}>
-            {animalData.characteristics.favorite_food}
-          </Text>{" "}
-          being a favorite.
-        </Text>
-        <Text style={styles.title}>
-          Main prey includes{" "}
-          <Text style={styles.bold}>
-            {animalData.characteristics.main_prey}
-          </Text>{" "}
-          while its predators are{" "}
-          <Text style={styles.bold}>
-            {animalData.characteristics.predators}
-          </Text>
-          .
-        </Text>
-        <Text style={styles.title}>
-          <Text style={styles.bold}>Slogan:</Text> "
-          {animalData.characteristics.slogan}"
-        </Text>
-      </View>
-    );
-  };
-
-  const renderPlantDetails = (plantData) => {
-    if (!plantData) return null;
-
-    // Use main_species data if available, otherwise fallback to top-level data
-    const speciesData = plantData.main_species || plantData;
-
-    const commonName = plantData.common_name || speciesData.common_name;
-    const scientificName =
-      plantData.scientific_name || speciesData.scientific_name;
-    const familyName = plantData.family
-      ? plantData.family.name
-      : speciesData.family;
-    const familyCommonName = plantData.family
-      ? plantData.family.common_name
-      : speciesData.family_common_name;
-
-    let detailsElements = [];
-
-    // Constructing the introduction with common and scientific names
-    if (commonName || scientificName) {
-      detailsElements.push(
-        <Text key="introduction" style={styles.title}>Meet the{" "}
-          <Text style={styles.bold}>{commonName || "mysterious plant"}</Text>,
-          scientifically known as{" "}
-          <Text style={styles.bold}>{scientificName}</Text>.
-        </Text>
-      );
-    }
-
-    // Detailed description of family and genus
-    if (familyName || familyCommonName) {
-      detailsElements.push(
-        <Text key="family" style={styles.text}>
-        It belongs to the{" "}
-          <Text style={styles.bold}>{familyName || "unknown family"}</Text>,
-          commonly referred to as the{" "}
-          <Text style={styles.bold}>{familyCommonName || "unknown"}</Text>{" "}
-          family.
-        </Text>
-      );
-    }
-
-    if (plantData.genus && plantData.genus.name) {
-      detailsElements.push(
-        <Text key="member" style={styles.text}>
-          This plant is a member of the{" "}
-          <Text style={styles.bold}>{plantData.genus.name}</Text> genus.
-        </Text>
-      );
-    }
-
-    // Bibliographic data
-    if (speciesData.bibliography) {
-      detailsElements.push(
-        <Text key="editor" style={styles.text}>
-          First documented by{" "}
-          <Text  style={styles.bold}>
-            {speciesData.author || "an unknown author"}
-          </Text>{" "}
-          in <Text style={styles.bold}>{speciesData.year}</Text>, as per{" "}
-          <Text style={styles.bold}>{speciesData.bibliography}</Text>.
-        </Text>
-      );
-    }
-
-    // Information about the distribution and conservation status
-    if (speciesData.distribution && speciesData.distribution.global) {
-      detailsElements.push(
-        <Text  key="details" style={styles.text}>
-          Its natural habitat spans{" "}
-          <Text style={styles.bold}>{speciesData.distribution.global}</Text>.
-        </Text>
-      );
-    }
-
-    if (speciesData.flower || speciesData.foliage) {
-      detailsElements.push(
-        <Text key="known" style={styles.text}>
-          Known for its {speciesData.flower ? "beautiful " + speciesData.flower.color + " flowers" : "lush foliage"}, this plant adds aesthetic value to its surroundings.
-        </Text>
-      );
-    }
-  
-    if (speciesData.edible === false) {
-      detailsElements.push(
-        <Text  key="edible" style={styles.text}>
-          Despite its beauty, it is <Text style={styles.bold}>not edible</Text> and should be admired only for its visual appeal.
-        </Text>
-      );
-    }
-  
-    if (speciesData.observations) {
-      detailsElements.push(
-        <Text key="history"  style={styles.text}>
-          Historically noted in regions like <Text style={styles.bold}>{speciesData.observations}</Text>, this plant has been a subject of interest among botanists and nature enthusiasts.
-        </Text>
-      );
-    }
-
-    return <View style={styles.container}>{detailsElements}</View>;
-  };
-
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.todayInfo}>
-        Today's class is <Text style={styles.appName}>{dailyClass}</Text>!{" "}
-        {"\n"}
-        Date: {formattedDate}
+        Today's class is{" "}
+        <TouchableOpacity onPress={triggerAnimation}>
+          <Animated.Text style={[styles.appName, { transform: [{ scale: scaleAnim }] }]}>
+            {dailyClass}
+          </Animated.Text>
+        </TouchableOpacity>
+        !{"\n"}
+        Date: {new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
       </Text>
-      {plantClasses.includes(dailyClass)
-        ? renderPlantDetails(animalData) // Assuming plant data is stored in the same state
-        : renderAnimalDetails(animalData)}
+      <Text style={styles.funFacts}>{funFacts}</Text>
       {imageUrl && <Image source={{ uri: imageUrl }} style={styles.image} />}
     </ScrollView>
   );
@@ -259,36 +123,29 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 10,
     padding: 15,
-    backgroundColor: "#FAFAFA", // Lighter, off-white background
+    backgroundColor: "#FAFAFA",
   },
   appName: {
     textDecorationLine: "underline",
-    color: "#4CAF50", // A fresh green, more vibrant
+    color: "#4CAF50",
     fontWeight: "bold",
-    fontSize: 20, // Larger font size for emphasis
+    fontSize: 20,
   },
   todayInfo: {
     fontSize: 18,
     textAlign: "center",
     marginBottom: 20,
-    color: "#555", // Slightly lighter than the main text
+    color: "black",
   },
-  title: {
-    fontSize: 16,
-    marginBottom: 10,
-    lineHeight: 24, // Increased line height for readability
-  },
-  text: {
-    fontSize: 16,
-    marginBottom: 10,
+  funFacts: {
+    fontSize: 18,
     lineHeight: 24,
-  },
-  bold: {
-    fontWeight: "bold",
+    fontStyle: 'italic',
+    color: 'black',
   },
   image: {
-    width: "100%",
-    height: 200,
+    width: 300,
+    height: 300,
     resizeMode: "contain",
     marginVertical: 10,
   },
