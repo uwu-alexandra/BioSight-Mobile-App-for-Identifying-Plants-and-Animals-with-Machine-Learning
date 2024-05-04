@@ -4,15 +4,18 @@ import { StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import BottomTabNavigator from "./src/BottomTabNavigator";
+import { ThemeProvider } from "./src/ThemeProvider";
 
 export default function App() {
   return (
+    <ThemeProvider>
     <SafeAreaProvider>
-      <StatusBar barStyle={"dark-content"} />
+      <StatusBar barStyle={"dark-content"}/>
       <NavigationContainer>
         <BottomTabNavigator />
       </NavigationContainer>
     </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 

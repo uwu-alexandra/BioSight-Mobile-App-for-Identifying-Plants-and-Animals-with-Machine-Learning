@@ -10,9 +10,10 @@ import SettingsScreen from "./screens/Settings";
 import CameraButton from "./CameraButton";
 import RegisterScreen from "./screens/Register";
 import LoginScreen from "./screens/Login";
-import { colors } from "./Colors";
+import { colors, darkColors } from "./Colors";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase.config";
+import { useTheme } from "../src/ThemeProvider";
 import CategoryScreen from "./screens/Category";
 
 const Tab = createBottomTabNavigator();
@@ -53,18 +54,20 @@ const SightsStack = () => {
 
 const MainStack = () => {
   const user = useUser();
+  const { theme } = useTheme(); // Using theme from ThemeProvider
+
   return (
     <Tab.Navigator
       screenOptions={{
         showLabel: false,
         style: {
-          backgroundColor: "white",
+          backgroundColor: theme.background,  // Use background color from theme
           position: "absolute",
           bottom: 40,
           marginHorizontal: 20,
           height: 60,
           borderRadius: 10,
-          shadowColor: "#000",
+          shadowColor: theme.shadowColor,
           shadowOpacity: 0.06,
           shadowOffset: { width: 10, height: 10 },
           paddingHorizontal: 20,
@@ -86,7 +89,7 @@ const MainStack = () => {
               <Entypo
                 name="home"
                 size={27}
-                color={focused ? colors.focused : colors.unfocused}
+                color={focused ? theme.focused : theme.unfocused}
               ></Entypo>
             </View>
           ),
@@ -111,9 +114,7 @@ const MainStack = () => {
                 color={
                   user && user.isGuest
                     ? "lightgray"
-                    : focused
-                    ? colors.focused
-                    : colors.unfocused
+                    :focused ? theme.focused : theme.unfocused
                 }
               ></FontAwesome5>
             </View>
@@ -175,9 +176,7 @@ const MainStack = () => {
                 color={
                   user && user.isGuest
                     ? "lightgray"
-                    : focused
-                    ? colors.focused
-                    : colors.unfocused
+                    :focused ? theme.focused : theme.unfocused
                 }
               ></Entypo>
             </View>
@@ -207,7 +206,7 @@ const MainStack = () => {
               <Ionicons
                 name="settings-sharp"
                 size={24}
-                color={focused ? colors.focused : colors.unfocused}
+                color={ focused ? theme.focused : theme.unfocused}
               ></Ionicons>
             </View>
           ),
