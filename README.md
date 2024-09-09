@@ -12,4 +12,4 @@ Step to follow:
 8. Done :) !
 
 
-Demo app: https://drive.google.com/file/d/1dogB3EVzeV0ahgOxPEbmHTLCHLvdiKRw/view?resourcekey
+Demo app: https://drive.google.com/file/d/1W2GIiJTJSFoBEISFvOF8Fc9L-nN2OijM/view?usp=sharing
